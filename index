@@ -1,0 +1,82 @@
+@extends('layouts.app')
+
+@section('style')
+    <style type="text/css">
+        .desabled {
+            pointer-events: none;
+        }
+    </style>
+@endsection
+
+@section('content')
+    <div id="app">
+        <div class="container">
+            <div id="token"></div>
+            <div id="msg"></div>
+            <div id="notis"></div>
+            <div id="err"></div>
+        </div>
+    </div>
+@endsection
+@section('extraJs')
+    <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-messaging.js"></script>
+
+    <script>
+        MsgElem = document.getElementById("msg")
+        TokenElem = document.getElementById("token")
+        NotisElem = document.getElementById("notis")
+        ErrElem = document.getElementById("err")
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAk7viRQeAQSvxMYow33fDs4IOvsOVFrnA",
+            authDomain: "layla-123.firebaseapp.com",
+            databaseURL: "https://layla-123.firebaseio.com",
+            projectId: "layla-123",
+            storageBucket: "layla-123.appspot.com",
+            messagingSenderId: "774160470204",
+            appId: "1:774160470204:web:12500b763f72a94a"
+        };
+        firebase.initializeApp(firebaseConfig);
+        let myToken = null;
+
+        const messaging = firebase.messaging();
+        messaging
+            .requestPermission()
+            .then(function () {
+                MsgElem.innerHTML = "Notification permission granted."
+                console.log("Notification permission granted.");
+
+                // get the token in the form of promise
+                return messaging.getToken()
+            })
+            .then(function(token) {
+                TokenElem.innerHTML = "token is : " + token
+                fetch('https://iid.googleapis.com/iid/v1/'+token+'/rel/topics/me_customers', {
+                    method: 'POST',
+                    headers: new Headers({
+                        'Authorization': 'key=AAAAtD-PULw:APA91bFsR2qCydj0LkVQJ3Ug-Z2wUhh7nuTGcrVxTJUf0UJasVbVVYxw5lnuRum2uGNAWhkJPct2ziptLY-oErGy88FMiXrJVZhUjMyt6f-Zt34KwxMPmGmTGMTZn5ieCUvt-wh60Jso'
+                    })
+                }).then(response => {
+                    if (response.status < 200 || response.status >= 400) {
+                        throw 'Error subscribing to topic: '+response.status + ' - ' + response.text();
+                    }
+                    console.log('Subscribed to "me_customers"');
+                }).catch(error => {
+                    console.error(error);
+                })
+            })
+            .catch(function (err) {
+                ErrElem.innerHTML =  ErrElem.innerHTML + "; " + err
+                console.log("Unable to get permission to notify.", err);
+            });
+
+        messaging.onMessage(function(payload) {
+            console.log("Message received. ", payload);
+            NotisElem.innerHTML = NotisElem.innerHTML + JSON.stringify(payload)
+        });
+    </script>
+
+@endsection
+
